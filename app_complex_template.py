@@ -7,7 +7,7 @@ from time import sleep
 from openai import OpenAI
 
 # 设置OpenAI API密钥
-os.environ["OPENAI_API_KEY"] = "sk-proj"
+os.environ["OPENAI_API_KEY"] = "sk-"
 
 # 初始化OpenAI客户端
 client = OpenAI()
@@ -127,38 +127,38 @@ def get_run_status(thread_id, run_id):
 def run_action(thread_id, run_id):
     """根据需要执行的动作进行处理"""
     run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run_id)
-
-    for tool in run.required_action.submit_tool_outputs.tool_calls:
-        if tool.function.name == "getCurrentWeather":
-            arguments = json.loads(tool.function.arguments)
-            location = arguments["location"]
+    
+    # 检查每个所需工具调用，并准备提交输出
+    tool_outputs = []
+    for tool_call in run.required_action.submit_tool_outputs.tool_calls:
+        function_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments)
+        location = arguments["location"]
+        
+        if function_name == "getCurrentWeather":
             weather_info = get_current_weather(location)
-            client.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread_id,
-                run_id=run.id,
-                tool_outputs=[
-                    {
-                        "tool_call_id": tool.id,
-                        "output": weather_info,
-                    },
-                ],
-            )
-        elif tool.function.name == "getNickname":
-            arguments = json.loads(tool.function.arguments)
-            location = arguments["location"]
+            tool_outputs.append({
+                "tool_call_id": tool_call.id,
+                "output": weather_info,
+            })
+        elif function_name == "getNickname":
             name_info = get_nickname(location)
-            client.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread_id,
-                run_id=run.id,
-                tool_outputs=[
-                    {
-                        "tool_call_id": tool.id,
-                        "output": name_info,
-                    },
-                ],
-            )
+            tool_outputs.append({
+                "tool_call_id": tool_call.id,
+                "output": name_info,
+            })
         else:
-            raise Exception(f"不支持的函数调用：{tool.function.name}。")
+            raise Exception(f"Unsupported function call: {function_name}.")
+    
+    # 提交每个工具调用的输出
+    client.beta.threads.runs.submit_tool_outputs(
+        thread_id=thread_id,
+        run_id=run_id,
+        tool_outputs=tool_outputs
+    )
+
+
+
 
 # 主函数
 def main():
