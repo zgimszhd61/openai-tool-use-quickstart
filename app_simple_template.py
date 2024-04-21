@@ -7,7 +7,7 @@ from time import sleep
 from openai import OpenAI
 
 # 设置OpenAI API密钥
-os.environ["OPENAI_API_KEY"] = "sk-proj-"
+os.environ["OPENAI_API_KEY"] = "sk-"
 
 # 初始化OpenAI客户端
 client = OpenAI()
@@ -69,93 +69,9 @@ starting_tools = [
             },
         },
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "getTimezone",
-            "description": "获取城市的时区",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "城市和州，例如：San Francisco, CA",
-                    },
-                },
-                "required": ["location"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "getCurrentTime",
-            "description": "获取指定位置的当前时间",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "城市和州，例如：Los Angeles, CA",
-                    },
-                },
-                "required": ["location"],
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "getPopulation",
-            "description": "获取指定城市的人口数量",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "城市名称，例如：New York",
-                    },
-                },
-                "required": ["location"],
-            },
-        },
-    },
     # 在此处添加更多工具
 ]
 
-
-
-# 获取城市时区的示例函数
-def get_timezone(location):
-    """获取指定城市的时区"""
-    print("get_timezone被调用")
-    # 假设基于城市名确定时区，实际应用中可以通过API调用或数据库查询实现
-    timezone_mapping = {
-        "San Francisco, CA": "PST",
-        "New York, NY": "EST",
-        "London, UK": "GMT",
-        "Beijing, China": "CST"
-    }
-    timezone = timezone_mapping.get(location, "Unknown")
-    return f"The timezone for {location} is {timezone}."
-
-def get_local_time(location):
-    """获取指定位置的当前时间"""
-    from datetime import datetime
-    import pytz  # 第三方库，需先安装，用于处理时区
-
-    timezone_mapping = {
-        "San Francisco, CA": "America/Los_Angeles",
-        "New York, NY": "America/New_York",
-        "Chicago, IL": "America/Chicago",
-        "Shanghai, China": "Asia/Shanghai",
-        "杭州, China": "Asia/Shanghai",
-    }
-
-    timezone = timezone_mapping.get(location, "UTC")  # 默认使用UTC
-    local_time = datetime.now(pytz.timezone(timezone)).strftime('%Y-%m-%d %H:%M:%S')
-    print("get_local_time被调用")
-    return f"The local time in {location} is {local_time}."
 
 def getLatestNews(source):
     """获取指定新闻源的最新新闻摘要"""
@@ -177,29 +93,6 @@ def get_nickname(location):
     if location == "Chicago":
         nickname = "The Windy City"
     return f"The nickname for {location} is {nickname}."
-
-# 获取当前时间的工具函数
-def get_current_time(location):
-    """获取指定位置的当前时间"""
-    from datetime import datetime
-    import pytz
-    print("get_current_time被调用")
-    timezone = pytz.timezone("America/Los_Angeles")  # 默认使用洛杉矶时间
-    current_time = datetime.now(timezone).strftime('%Y-%m-%d %H:%M:%S')
-    return f"The current time in {location} is {current_time}."
-
-# 获取城市人口的工具函数
-def get_population(location):
-    """获取指定城市的人口数量"""
-    # 假设有一个字典包含一些城市的人口数据
-    population_data = {
-        "New York": "8,336,817",
-        "Los Angeles": "3,979,576",
-        "Chicago": "2,693,976"
-    }
-    print("get_population被调用")
-    population = population_data.get(location, "Data not available")
-    return f"The population of {location} is {population}."
 
 # 创建助手
 def create_assistant():
@@ -301,48 +194,6 @@ def run_action(thread_id, run_id):
                     },
                 ],
             )
-        elif tool.function.name == "getTimezone":
-            arguments = json.loads(tool.function.arguments)
-            location = arguments["location"]
-            timezone_info = get_timezone(location)
-            client.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread_id,
-                run_id=run.id,
-                tool_outputs=[
-                    {
-                        "tool_call_id": tool.id,
-                        "output": timezone_info,
-                    },
-                ],
-            )
-        elif tool.function.name == "getCurrentTime":
-            arguments = json.loads(tool.function.arguments)
-            location = arguments["location"]
-            time_info = get_current_time(location)
-            client.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread_id,
-                run_id=run.id,
-                tool_outputs=[
-                    {
-                        "tool_call_id": tool.id,
-                        "output": time_info,
-                    },
-                ],
-            )
-        elif tool.function.name == "getPopulation":
-            arguments = json.loads(tool.function.arguments)
-            location = arguments["location"]
-            population_info = get_population(location)
-            client.beta.threads.runs.submit_tool_outputs(
-                thread_id=thread_id,
-                run_id=run.id,
-                tool_outputs=[
-                    {
-                        "tool_call_id": tool.id,
-                        "output": population_info,
-                    },
-                ],
-            )
         else:
             raise Exception(f"不支持的函数调用：{tool.function.name}。")
 
@@ -353,7 +204,8 @@ def main():
     my_thread = create_thread()
 
     if 1==1:
-        user_message = "纽约的人口是多少？"
+        # user_message = input("请输入您的消息：")
+        user_message = "给我今天的新闻"
         if user_message.lower() == "exit":
             return
 
@@ -364,8 +216,10 @@ def main():
             run.status = get_run_status(my_thread.id, run.id)
             if run.status == "requires_action":
                 run_action(my_thread.id, run.id)
+            # sleep(1)
             print("⏳", end="\r", flush=True)
 
+        # sleep(0.5)
         response = get_newest_message(my_thread.id)
         print("回应：", response.content[0].text.value)
 
