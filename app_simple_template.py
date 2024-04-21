@@ -168,7 +168,7 @@ def main():
 
     if 1==1:
         # user_message = input("请输入您的消息：")
-        user_message = "获取San Francisco的天气和昵称"
+        user_message = "获取San Francisco的天气"
         if user_message.lower() == "exit":
             return
 
